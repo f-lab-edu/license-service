@@ -1,0 +1,13 @@
+spring:
+  application:
+    name: license-service
+
+  profiles:
+    active: local
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+
+server:
+  port: 8080
