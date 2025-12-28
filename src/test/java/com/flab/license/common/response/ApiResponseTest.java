@@ -2,6 +2,7 @@ package com.flab.license.common.response;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.flab.license.common.exception.CommonErrorCode;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -48,7 +49,7 @@ class ApiResponseTest {
 
 		// Then
 		assertThat(response.success()).isFalse();
-		assertThat(response.code()).isEqualTo("LICENSE_NOT_FOUND");
+		assertThat(response.error()).isEqualTo("LICENSE_NOT_FOUND");
 		assertThat(response.message()).isEqualTo("라이선스를 찾을 수 없습니다");
 		assertThat(response.data()).isNull();
 	}
@@ -66,7 +67,7 @@ class ApiResponseTest {
 		assertThat(json)
 			.contains("\"success\":true")
 			.contains("\"data\":\"data\"")
-			.doesNotContain("\"code\"")
+			.doesNotContain("\"error\"")
 			.doesNotContain("\"message\"");
 	}
 
@@ -81,5 +82,18 @@ class ApiResponseTest {
 
 		// Then
 		assertThat(json).isEqualTo("{\"success\":true}");
+	}
+
+	@Test
+	@DisplayName("error() 호출 시 ErrorCode로 에러 응답을 생성한다")
+	void error_CreatesErrorResponse() {
+		// When
+		ApiResponse<Void> response = ApiResponse.error(CommonErrorCode.INVALID_JSON);
+
+		// Then
+		assertThat(response.success()).isFalse();
+		assertThat(response.error()).isEqualTo("INVALID_JSON");
+		assertThat(response.message()).isEqualTo(CommonErrorCode.INVALID_JSON.getMessage());
+		assertThat(response.data()).isNull();
 	}
 }

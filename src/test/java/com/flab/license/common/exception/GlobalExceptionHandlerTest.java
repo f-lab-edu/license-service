@@ -28,7 +28,7 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 import org.springframework.web.servlet.NoHandlerFoundException;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.flab.license.common.response.ErrorResponse;
+import com.flab.license.common.response.ApiResponse;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
@@ -55,14 +55,14 @@ class GlobalExceptionHandlerTest {
 		CustomException exception = new CustomException(CommonErrorCode.RESOURCE_NOT_FOUND);
 
 		// When
-		ResponseEntity<ErrorResponse> response = handler.handleCustomException(exception);
+		ResponseEntity<ApiResponse<Void>> response = handler.handleCustomException(exception);
 
 		// Then
 		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
 		assertThat(response.getBody())
 			.isNotNull()
 			.satisfies(body -> {
-				assertThat(body.code()).isEqualTo("RESOURCE_NOT_FOUND");
+				assertThat(body.error()).isEqualTo("RESOURCE_NOT_FOUND");
 				assertThat(body.message()).isEqualTo("요청한 리소스를 찾을 수 없습니다");
 			});
 	}
@@ -74,13 +74,13 @@ class GlobalExceptionHandlerTest {
 		MethodArgumentNotValidException exception = mock(MethodArgumentNotValidException.class);
 
 		// When
-		ResponseEntity<ErrorResponse> response = handler.handleMethodArgumentNotValidException(exception);
+		ResponseEntity<ApiResponse<Void>> response = handler.handleMethodArgumentNotValidException(exception);
 
 		// Then
 		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
 		assertThat(response.getBody())
 			.isNotNull()
-			.extracting(ErrorResponse::code)
+			.extracting(ApiResponse::error)
 			.isEqualTo("INVALID_INPUT");
 	}
 
@@ -91,13 +91,13 @@ class GlobalExceptionHandlerTest {
 		HttpMessageNotReadableException exception = mock(HttpMessageNotReadableException.class);
 
 		// When
-		ResponseEntity<ErrorResponse> response = handler.handleHttpMessageNotReadableException(exception);
+		ResponseEntity<ApiResponse<Void>> response = handler.handleHttpMessageNotReadableException(exception);
 
 		// Then
 		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
 		assertThat(response.getBody())
 			.isNotNull()
-			.extracting(ErrorResponse::code)
+			.extracting(ApiResponse::error)
 			.isEqualTo("INVALID_JSON");
 	}
 
@@ -108,13 +108,13 @@ class GlobalExceptionHandlerTest {
 		MissingServletRequestParameterException exception = new MissingServletRequestParameterException("name", "String");
 
 		// When
-		ResponseEntity<ErrorResponse> response = handler.handleMissingServletRequestParameterException(exception);
+		ResponseEntity<ApiResponse<Void>> response = handler.handleMissingServletRequestParameterException(exception);
 
 		// Then
 		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
 		assertThat(response.getBody())
 			.isNotNull()
-			.extracting(ErrorResponse::code)
+			.extracting(ApiResponse::error)
 			.isEqualTo("MISSING_PARAMETER");
 	}
 
@@ -125,13 +125,13 @@ class GlobalExceptionHandlerTest {
 		BindException exception = new BindException(new Object(), "target");
 
 		// When
-		ResponseEntity<ErrorResponse> response = handler.handleBindException(exception);
+		ResponseEntity<ApiResponse<Void>> response = handler.handleBindException(exception);
 
 		// Then
 		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
 		assertThat(response.getBody())
 			.isNotNull()
-			.extracting(ErrorResponse::code)
+			.extracting(ApiResponse::error)
 			.isEqualTo("INVALID_INPUT");
 	}
 
@@ -142,13 +142,13 @@ class GlobalExceptionHandlerTest {
 		MethodArgumentTypeMismatchException exception = new MethodArgumentTypeMismatchException("abc", Long.class, "id", null, null);
 
 		// When
-		ResponseEntity<ErrorResponse> response = handler.handleMethodArgumentTypeMismatchException(exception);
+		ResponseEntity<ApiResponse<Void>> response = handler.handleMethodArgumentTypeMismatchException(exception);
 
 		// Then
 		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
 		assertThat(response.getBody())
 			.isNotNull()
-			.extracting(ErrorResponse::code)
+			.extracting(ApiResponse::error)
 			.isEqualTo("TYPE_MISMATCH");
 	}
 
@@ -159,13 +159,13 @@ class GlobalExceptionHandlerTest {
 		HttpRequestMethodNotSupportedException exception = new HttpRequestMethodNotSupportedException("DELETE");
 
 		// When
-		ResponseEntity<ErrorResponse> response = handler.handleHttpRequestMethodNotSupportedException(exception);
+		ResponseEntity<ApiResponse<Void>> response = handler.handleHttpRequestMethodNotSupportedException(exception);
 
 		// Then
 		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.METHOD_NOT_ALLOWED);
 		assertThat(response.getBody())
 			.isNotNull()
-			.extracting(ErrorResponse::code)
+			.extracting(ApiResponse::error)
 			.isEqualTo("METHOD_NOT_ALLOWED");
 	}
 
@@ -176,13 +176,13 @@ class GlobalExceptionHandlerTest {
 		NoHandlerFoundException exception = new NoHandlerFoundException("GET", "/unknown", null);
 
 		// When
-		ResponseEntity<ErrorResponse> response = handler.handleNoHandlerFoundException(exception);
+		ResponseEntity<ApiResponse<Void>> response = handler.handleNoHandlerFoundException(exception);
 
 		// Then
 		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
 		assertThat(response.getBody())
 			.isNotNull()
-			.extracting(ErrorResponse::code)
+			.extracting(ApiResponse::error)
 			.isEqualTo("RESOURCE_NOT_FOUND");
 	}
 
@@ -193,18 +193,18 @@ class GlobalExceptionHandlerTest {
 		Exception exception = new RuntimeException("Unexpected error");
 
 		// When
-		ResponseEntity<ErrorResponse> response = handler.handleException(exception);
+		ResponseEntity<ApiResponse<Void>> response = handler.handleException(exception);
 
 		// Then
 		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
 		assertThat(response.getBody())
 			.isNotNull()
-			.extracting(ErrorResponse::code)
+			.extracting(ApiResponse::error)
 			.isEqualTo("INTERNAL_ERROR");
 	}
 
 	@Test
-	@DisplayName("MockMvc - @Valid 실패 시 INVALID_INPUT 코드로 응답한다")
+	@DisplayName("MockMvc - @Valid 실패 시 INVALID_INPUT 에러로 응답한다")
 	void mockMvc_ShouldReturnInvalidInputForValidationErrors() throws Exception {
 		String payload = objectMapper.writeValueAsString(new SampleRequest("", 0));
 
@@ -212,33 +212,33 @@ class GlobalExceptionHandlerTest {
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(payload))
 			.andExpect(status().isBadRequest())
-			.andExpect(jsonPath("$.code").value("INVALID_INPUT"));
+			.andExpect(jsonPath("$.error").value("INVALID_INPUT"));
 	}
 
 	@Test
-	@DisplayName("MockMvc - 잘못된 JSON이면 INVALID_JSON 코드로 응답한다")
+	@DisplayName("MockMvc - 잘못된 JSON이면 INVALID_JSON 에러로 응답한다")
 	void mockMvc_ShouldReturnInvalidJsonForUnreadableBody() throws Exception {
 		mockMvc.perform(post("/samples")
 				.contentType(MediaType.APPLICATION_JSON)
 				.content("{invalid}"))
 			.andExpect(status().isBadRequest())
-			.andExpect(jsonPath("$.code").value("INVALID_JSON"));
+			.andExpect(jsonPath("$.error").value("INVALID_JSON"));
 	}
 
 	@Test
-	@DisplayName("MockMvc - 요청 파라미터 누락 시 MISSING_PARAMETER 코드로 응답한다")
+	@DisplayName("MockMvc - 요청 파라미터 누락 시 MISSING_PARAMETER 에러로 응답한다")
 	void mockMvc_ShouldReturnMissingParameter() throws Exception {
 		mockMvc.perform(get("/missing"))
 			.andExpect(status().isBadRequest())
-			.andExpect(jsonPath("$.code").value("MISSING_PARAMETER"));
+			.andExpect(jsonPath("$.error").value("MISSING_PARAMETER"));
 	}
 
 	@Test
-	@DisplayName("MockMvc - 타입 불일치 시 TYPE_MISMATCH 코드로 응답한다")
+	@DisplayName("MockMvc - 타입 불일치 시 TYPE_MISMATCH 에러로 응답한다")
 	void mockMvc_ShouldReturnTypeMismatch() throws Exception {
 		mockMvc.perform(get("/samples").param("id", "abc"))
 			.andExpect(status().isBadRequest())
-			.andExpect(jsonPath("$.code").value("TYPE_MISMATCH"));
+			.andExpect(jsonPath("$.error").value("TYPE_MISMATCH"));
 	}
 
 	@RestController
