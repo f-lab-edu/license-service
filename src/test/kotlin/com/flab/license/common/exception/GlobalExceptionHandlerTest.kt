@@ -60,7 +60,12 @@ class GlobalExceptionHandlerTest {
     @DisplayName("MethodArgumentNotValidException 발생 시 400 상태코드와 INVALID_INPUT을 반환한다")
     fun `handleMethodArgumentNotValidException returns 400 with invalid input`() {
         // Given
-        val exception = mock<MethodArgumentNotValidException>()
+        val bindingResult = mock<org.springframework.validation.BindingResult> {
+            on { fieldErrors }.thenReturn(emptyList())
+        }
+        val exception = mock<MethodArgumentNotValidException> {
+            on { this.bindingResult }.thenReturn(bindingResult)
+        }
 
         // When
         val response = handler.handleMethodArgumentNotValidException(exception)

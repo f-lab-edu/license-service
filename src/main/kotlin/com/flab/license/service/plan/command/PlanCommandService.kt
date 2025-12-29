@@ -32,9 +32,9 @@ class PlanCommandService(
     }
 
     @Transactional
-    fun delete(planId: PlanId): Plan {
+    fun delete(planId: PlanId) {
         val plan = planRepository.loadById(planId)
         val deleted = plan.delete()
-        return planRepository.delete(deleted)
+        planRepository.delete(deleted)
     }
 }

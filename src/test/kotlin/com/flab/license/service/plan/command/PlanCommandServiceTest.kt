@@ -124,10 +124,10 @@ class PlanCommandServiceTest {
             given(planRepository.delete(any())).willAnswer { it.arguments[0] }
 
             // When
-            val result = planCommandService.delete(existingPlan.id)
+            planCommandService.delete(existingPlan.id)
 
             // Then
-            assertThat(result.deleted).isTrue()
+            verify(planRepository).delete(any())
         }
 
         @Test
