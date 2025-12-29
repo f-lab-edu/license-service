@@ -39,7 +39,7 @@ class PlanQueryServiceTest {
         fun `get plan by id successfully`() {
             // Given
             val plan = Plan.create(
-                planCode = PlanCode.PRO,
+                planCode = PlanCode.ENTERPRISE,
                 maxSeats = 10,
                 monthlyTokenLimit = 500_000L
             )
@@ -50,7 +50,7 @@ class PlanQueryServiceTest {
 
             // Then
             assertThat(result.id).isEqualTo(plan.id)
-            assertThat(result.planCode).isEqualTo(PlanCode.PRO)
+            assertThat(result.planCode).isEqualTo(PlanCode.ENTERPRISE)
         }
 
         @Test
@@ -120,7 +120,7 @@ class PlanQueryServiceTest {
                 monthlyTokenLimit = 50_000L
             )
             val plan2 = Plan.create(
-                planCode = PlanCode.PRO,
+                planCode = PlanCode.ENTERPRISE,
                 maxSeats = 10,
                 monthlyTokenLimit = 500_000L
             )
@@ -131,7 +131,7 @@ class PlanQueryServiceTest {
 
             // Then
             assertThat(result).hasSize(2)
-            assertThat(result.map { it.planCode }).containsExactlyInAnyOrder(PlanCode.FREE, PlanCode.PRO)
+            assertThat(result.map { it.planCode }).containsExactlyInAnyOrder(PlanCode.FREE, PlanCode.ENTERPRISE)
         }
 
         @Test

@@ -51,7 +51,7 @@ class PlanControllerTest {
         @DisplayName("플랜 생성 성공")
         fun `create plan successfully`() {
             val request = CreatePlanRequest(
-                planCode = "PRO",
+                planCode = "ENTERPRISE",
                 maxSeats = 10,
                 monthlyTokenLimit = 500_000L
             )
@@ -62,7 +62,7 @@ class PlanControllerTest {
             }.andExpect {
                 status { isCreated() }
                 jsonPath("$.success") { value(true) }
-                jsonPath("$.data.planCode") { value("PRO") }
+                jsonPath("$.data.planCode") { value("ENTERPRISE") }
                 jsonPath("$.data.maxSeats") { value(10) }
                 jsonPath("$.data.monthlyTokenLimit") { value(500_000) }
             }
@@ -168,7 +168,7 @@ class PlanControllerTest {
         fun `get all plans successfully`() {
             // Given
             val plan1 = Plan.create(PlanCode.FREE, 1, 50_000L)
-            val plan2 = Plan.create(PlanCode.PRO, 10, 500_000L)
+            val plan2 = Plan.create(PlanCode.ENTERPRISE, 10, 500_000L)
             planRepository.save(plan1)
             planRepository.save(plan2)
 
@@ -197,7 +197,7 @@ class PlanControllerTest {
         fun `exclude deleted plans from list`() {
             // Given
             val plan1 = Plan.create(PlanCode.FREE, 1, 50_000L)
-            val plan2 = Plan.create(PlanCode.PRO, 10, 500_000L)
+            val plan2 = Plan.create(PlanCode.ENTERPRISE, 10, 500_000L)
             planRepository.save(plan1)
             planRepository.save(plan2)
 
@@ -223,7 +223,7 @@ class PlanControllerTest {
         @DisplayName("플랜 상세 조회 성공")
         fun `get plan by id successfully`() {
             // Given
-            val plan = Plan.create(PlanCode.PRO, 10, 500_000L)
+            val plan = Plan.create(PlanCode.ENTERPRISE, 10, 500_000L)
             planRepository.save(plan)
 
             // When & Then
@@ -231,7 +231,7 @@ class PlanControllerTest {
                 .andExpect {
                     status { isOk() }
                     jsonPath("$.success") { value(true) }
-                    jsonPath("$.data.planCode") { value("PRO") }
+                    jsonPath("$.data.planCode") { value("ENTERPRISE") }
                     jsonPath("$.data.maxSeats") { value(10) }
                 }
         }
@@ -269,7 +269,7 @@ class PlanControllerTest {
         @DisplayName("플랜 수정 성공")
         fun `update plan successfully`() {
             // Given
-            val plan = Plan.create(PlanCode.PRO, 10, 500_000L)
+            val plan = Plan.create(PlanCode.ENTERPRISE, 10, 500_000L)
             planRepository.save(plan)
 
             val request = UpdatePlanRequest(
@@ -293,7 +293,7 @@ class PlanControllerTest {
         @DisplayName("최소값(maxSeats=1, monthlyTokenLimit=1)으로 플랜 수정 성공")
         fun `update plan with minimum values`() {
             // Given
-            val plan = Plan.create(PlanCode.PRO, 10, 500_000L)
+            val plan = Plan.create(PlanCode.ENTERPRISE, 10, 500_000L)
             planRepository.save(plan)
 
             val request = UpdatePlanRequest(
@@ -356,7 +356,7 @@ class PlanControllerTest {
         @DisplayName("플랜 삭제 성공")
         fun `delete plan successfully`() {
             // Given
-            val plan = Plan.create(PlanCode.PRO, 10, 500_000L)
+            val plan = Plan.create(PlanCode.ENTERPRISE, 10, 500_000L)
             planRepository.save(plan)
 
             // When & Then

@@ -10,25 +10,18 @@ class Plan private constructor(
     val monthlyTokenLimit: Long,
     val deleted: Boolean = false
 ) {
-    init {
-        if (maxSeats < 0) {
-            throw PlanException(PlanErrorCode.INVALID_MAX_SEATS)
-        }
-        if (monthlyTokenLimit < 0) {
-            throw PlanException(PlanErrorCode.INVALID_MONTHLY_TOKEN_LIMIT)
-        }
-    }
 
     fun update(maxSeats: Int, monthlyTokenLimit: Long): Plan {
         if (deleted) {
             throw PlanException(PlanErrorCode.PLAN_ALREADY_DELETED)
         }
+        PlanPolicy.validate(planCode, maxSeats, monthlyTokenLimit)
         return Plan(
             id = this.id,
             planCode = this.planCode,
             maxSeats = maxSeats,
             monthlyTokenLimit = monthlyTokenLimit,
-            deleted = this.deleted
+            deleted = false
         )
     }
 
@@ -51,6 +44,7 @@ class Plan private constructor(
             maxSeats: Int,
             monthlyTokenLimit: Long
         ): Plan {
+            PlanPolicy.validate(planCode, maxSeats, monthlyTokenLimit)
             return Plan(
                 id = PlanId.generate(),
                 planCode = planCode,

@@ -15,30 +15,60 @@ class PlanTest {
     inner class Create {
 
         @Test
-        @DisplayName("플랜을 생성할 수 있다")
-        fun `create plan successfully`() {
+        @DisplayName("ENTERPRISE 플랜을 생성할 수 있다")
+        fun `create enterprise plan successfully`() {
             // When
             val plan = Plan.create(
-                planCode = PlanCode.PRO,
+                planCode = PlanCode.ENTERPRISE,
                 maxSeats = 10,
                 monthlyTokenLimit = 100_000L
             )
 
             // Then
             assertThat(plan.id).isNotNull
-            assertThat(plan.planCode).isEqualTo(PlanCode.PRO)
+            assertThat(plan.planCode).isEqualTo(PlanCode.ENTERPRISE)
             assertThat(plan.maxSeats).isEqualTo(10)
             assertThat(plan.monthlyTokenLimit).isEqualTo(100_000L)
             assertThat(plan.deleted).isFalse
         }
 
         @Test
-        @DisplayName("maxSeats가 음수이면 예외가 발생한다")
-        fun `throw exception when maxSeats is negative`() {
+        @DisplayName("FREE 플랜은 maxSeats=1로 생성할 수 있다")
+        fun `create free plan with maxSeats 1`() {
+            // When
+            val plan = Plan.create(
+                planCode = PlanCode.FREE,
+                maxSeats = 1,
+                monthlyTokenLimit = 10_000L
+            )
+
+            // Then
+            assertThat(plan.planCode).isEqualTo(PlanCode.FREE)
+            assertThat(plan.maxSeats).isEqualTo(1)
+        }
+
+        @Test
+        @DisplayName("PRO 플랜은 maxSeats=1로 생성할 수 있다")
+        fun `create pro plan with maxSeats 1`() {
+            // When
+            val plan = Plan.create(
+                planCode = PlanCode.PRO,
+                maxSeats = 1,
+                monthlyTokenLimit = 100_000L
+            )
+
+            // Then
+            assertThat(plan.planCode).isEqualTo(PlanCode.PRO)
+            assertThat(plan.maxSeats).isEqualTo(1)
+        }
+
+        @Test
+        @DisplayName("maxSeats가 0이면 예외가 발생한다")
+        fun `throw exception when maxSeats is zero`() {
             assertThatThrownBy {
                 Plan.create(
-                    planCode = PlanCode.PRO,
-                    maxSeats = -1,
+                    planCode = PlanCode.ENTERPRISE,
+                    maxSeats = 0,
                     monthlyTokenLimit = 100_000L
                 )
             }.isInstanceOf(PlanException::class.java)
@@ -47,13 +77,13 @@ class PlanTest {
         }
 
         @Test
-        @DisplayName("monthlyTokenLimit이 음수이면 예외가 발생한다")
-        fun `throw exception when monthlyTokenLimit is negative`() {
+        @DisplayName("monthlyTokenLimit이 0이면 예외가 발생한다")
+        fun `throw exception when monthlyTokenLimit is zero`() {
             assertThatThrownBy {
                 Plan.create(
-                    planCode = PlanCode.PRO,
+                    planCode = PlanCode.ENTERPRISE,
                     maxSeats = 10,
-                    monthlyTokenLimit = -1L
+                    monthlyTokenLimit = 0L
                 )
             }.isInstanceOf(PlanException::class.java)
                 .extracting("errorCode")
@@ -61,31 +91,31 @@ class PlanTest {
         }
 
         @Test
-        @DisplayName("maxSeats가 0이면 생성할 수 있다")
-        fun `create plan with zero maxSeats`() {
-            // When
-            val plan = Plan.create(
-                planCode = PlanCode.FREE,
-                maxSeats = 0,
-                monthlyTokenLimit = 1000L
-            )
-
-            // Then
-            assertThat(plan.maxSeats).isEqualTo(0)
+        @DisplayName("FREE 플랜에서 maxSeats가 1이 아니면 예외가 발생한다")
+        fun `throw exception when free plan maxSeats is not 1`() {
+            assertThatThrownBy {
+                Plan.create(
+                    planCode = PlanCode.FREE,
+                    maxSeats = 2,
+                    monthlyTokenLimit = 10_000L
+                )
+            }.isInstanceOf(PlanException::class.java)
+                .extracting("errorCode")
+                .isEqualTo(PlanErrorCode.INVALID_MAX_SEATS_FOR_PLAN)
         }
 
         @Test
-        @DisplayName("monthlyTokenLimit이 0이면 생성할 수 있다")
-        fun `create plan with zero monthlyTokenLimit`() {
-            // When
-            val plan = Plan.create(
-                planCode = PlanCode.FREE,
-                maxSeats = 1,
-                monthlyTokenLimit = 0L
-            )
-
-            // Then
-            assertThat(plan.monthlyTokenLimit).isEqualTo(0L)
+        @DisplayName("PRO 플랜에서 maxSeats가 1이 아니면 예외가 발생한다")
+        fun `throw exception when pro plan maxSeats is not 1`() {
+            assertThatThrownBy {
+                Plan.create(
+                    planCode = PlanCode.PRO,
+                    maxSeats = 5,
+                    monthlyTokenLimit = 100_000L
+                )
+            }.isInstanceOf(PlanException::class.java)
+                .extracting("errorCode")
+                .isEqualTo(PlanErrorCode.INVALID_MAX_SEATS_FOR_PLAN)
         }
 
     }
@@ -95,11 +125,11 @@ class PlanTest {
     inner class Update {
 
         @Test
-        @DisplayName("플랜을 수정할 수 있다")
-        fun `update plan successfully`() {
+        @DisplayName("ENTERPRISE 플랜을 수정할 수 있다")
+        fun `update enterprise plan successfully`() {
             // Given
             val plan = Plan.create(
-                planCode = PlanCode.PRO,
+                planCode = PlanCode.ENTERPRISE,
                 maxSeats = 5,
                 monthlyTokenLimit = 100_000L
             )
@@ -115,73 +145,74 @@ class PlanTest {
         }
 
         @Test
-        @DisplayName("수정 시 maxSeats가 음수이면 예외가 발생한다")
-        fun `throw exception when update with negative maxSeats`() {
+        @DisplayName("FREE/PRO 플랜은 monthlyTokenLimit만 수정할 수 있다")
+        fun `update free pro plan monthlyTokenLimit only`() {
             // Given
             val plan = Plan.create(
                 planCode = PlanCode.PRO,
+                maxSeats = 1,
+                monthlyTokenLimit = 100_000L
+            )
+
+            // When
+            val updated = plan.update(maxSeats = 1, monthlyTokenLimit = 500_000L)
+
+            // Then
+            assertThat(updated.monthlyTokenLimit).isEqualTo(500_000L)
+        }
+
+        @Test
+        @DisplayName("수정 시 maxSeats가 0이면 예외가 발생한다")
+        fun `throw exception when update with zero maxSeats`() {
+            // Given
+            val plan = Plan.create(
+                planCode = PlanCode.ENTERPRISE,
                 maxSeats = 10,
                 monthlyTokenLimit = 100_000L
             )
 
             // When & Then
             assertThatThrownBy {
-                plan.update(maxSeats = -1, monthlyTokenLimit = 100_000L)
+                plan.update(maxSeats = 0, monthlyTokenLimit = 100_000L)
             }.isInstanceOf(PlanException::class.java)
                 .extracting("errorCode")
                 .isEqualTo(PlanErrorCode.INVALID_MAX_SEATS)
         }
 
         @Test
-        @DisplayName("수정 시 monthlyTokenLimit이 음수이면 예외가 발생한다")
-        fun `throw exception when update with negative monthlyTokenLimit`() {
+        @DisplayName("수정 시 monthlyTokenLimit이 0이면 예외가 발생한다")
+        fun `throw exception when update with zero monthlyTokenLimit`() {
             // Given
             val plan = Plan.create(
-                planCode = PlanCode.PRO,
+                planCode = PlanCode.ENTERPRISE,
                 maxSeats = 10,
                 monthlyTokenLimit = 100_000L
             )
 
             // When & Then
             assertThatThrownBy {
-                plan.update(maxSeats = 10, monthlyTokenLimit = -1L)
+                plan.update(maxSeats = 10, monthlyTokenLimit = 0L)
             }.isInstanceOf(PlanException::class.java)
                 .extracting("errorCode")
                 .isEqualTo(PlanErrorCode.INVALID_MONTHLY_TOKEN_LIMIT)
         }
 
         @Test
-        @DisplayName("수정 시 maxSeats를 0으로 변경할 수 있다")
-        fun `update plan with zero maxSeats`() {
+        @DisplayName("FREE/PRO 플랜에서 maxSeats를 1이 아닌 값으로 수정하면 예외가 발생한다")
+        fun `throw exception when update free pro plan with maxSeats not 1`() {
             // Given
             val plan = Plan.create(
                 planCode = PlanCode.PRO,
-                maxSeats = 10,
+                maxSeats = 1,
                 monthlyTokenLimit = 100_000L
             )
 
-            // When
-            val updated = plan.update(maxSeats = 0, monthlyTokenLimit = 100_000L)
-
-            // Then
-            assertThat(updated.maxSeats).isEqualTo(0)
-        }
-
-        @Test
-        @DisplayName("수정 시 monthlyTokenLimit을 0으로 변경할 수 있다")
-        fun `update plan with zero monthlyTokenLimit`() {
-            // Given
-            val plan = Plan.create(
-                planCode = PlanCode.PRO,
-                maxSeats = 10,
-                monthlyTokenLimit = 100_000L
-            )
-
-            // When
-            val updated = plan.update(maxSeats = 10, monthlyTokenLimit = 0L)
-
-            // Then
-            assertThat(updated.monthlyTokenLimit).isEqualTo(0L)
+            // When & Then
+            assertThatThrownBy {
+                plan.update(maxSeats = 5, monthlyTokenLimit = 100_000L)
+            }.isInstanceOf(PlanException::class.java)
+                .extracting("errorCode")
+                .isEqualTo(PlanErrorCode.INVALID_MAX_SEATS_FOR_PLAN)
         }
     }
 
@@ -194,7 +225,7 @@ class PlanTest {
         fun `delete plan sets deleted to true`() {
             // Given
             val plan = Plan.create(
-                planCode = PlanCode.PRO,
+                planCode = PlanCode.ENTERPRISE,
                 maxSeats = 10,
                 monthlyTokenLimit = 100_000L
             )
@@ -213,7 +244,7 @@ class PlanTest {
         fun `throw exception when delete already deleted plan`() {
             // Given
             val plan = Plan.create(
-                planCode = PlanCode.PRO,
+                planCode = PlanCode.ENTERPRISE,
                 maxSeats = 10,
                 monthlyTokenLimit = 100_000L
             )
@@ -232,7 +263,7 @@ class PlanTest {
         fun `throw exception when update deleted plan`() {
             // Given
             val plan = Plan.create(
-                planCode = PlanCode.PRO,
+                planCode = PlanCode.ENTERPRISE,
                 maxSeats = 10,
                 monthlyTokenLimit = 100_000L
             )
@@ -287,7 +318,7 @@ class PlanTest {
             // When
             val plan = Plan.reconstitute(
                 id = id,
-                planCode = PlanCode.PRO,
+                planCode = PlanCode.ENTERPRISE,
                 maxSeats = 10,
                 monthlyTokenLimit = 100_000L,
                 deleted = true
@@ -298,35 +329,43 @@ class PlanTest {
         }
 
         @Test
-        @DisplayName("복원 시 maxSeats가 음수이면 예외가 발생한다")
-        fun `throw exception when reconstitute with negative maxSeats`() {
-            assertThatThrownBy {
-                Plan.reconstitute(
-                    id = PlanId.generate(),
-                    planCode = PlanCode.PRO,
-                    maxSeats = -1,
-                    monthlyTokenLimit = 100_000L,
-                    deleted = false
-                )
-            }.isInstanceOf(PlanException::class.java)
-                .extracting("errorCode")
-                .isEqualTo(PlanErrorCode.INVALID_MAX_SEATS)
+        @DisplayName("복원 시 검증을 수행하지 않는다 - 잘못된 데이터도 복원 가능")
+        fun `reconstitute skips validation for invalid data`() {
+            // Given - 잘못된 데이터 (maxSeats=0)
+            val id = PlanId.generate()
+
+            // When - 복원은 성공
+            val plan = Plan.reconstitute(
+                id = id,
+                planCode = PlanCode.ENTERPRISE,
+                maxSeats = 0,
+                monthlyTokenLimit = 0L,
+                deleted = false
+            )
+
+            // Then
+            assertThat(plan.maxSeats).isEqualTo(0)
+            assertThat(plan.monthlyTokenLimit).isEqualTo(0L)
         }
 
         @Test
-        @DisplayName("복원 시 monthlyTokenLimit이 음수이면 예외가 발생한다")
-        fun `throw exception when reconstitute with negative monthlyTokenLimit`() {
+        @DisplayName("복원된 잘못된 데이터를 수정하려 하면 검증 실패")
+        fun `update on reconstituted invalid data fails validation`() {
+            // Given - 잘못된 데이터로 복원
+            val plan = Plan.reconstitute(
+                id = PlanId.generate(),
+                planCode = PlanCode.ENTERPRISE,
+                maxSeats = 0,
+                monthlyTokenLimit = 100_000L,
+                deleted = false
+            )
+
+            // When & Then - 수정 시 검증 실패
             assertThatThrownBy {
-                Plan.reconstitute(
-                    id = PlanId.generate(),
-                    planCode = PlanCode.PRO,
-                    maxSeats = 10,
-                    monthlyTokenLimit = -1L,
-                    deleted = false
-                )
+                plan.update(maxSeats = 0, monthlyTokenLimit = 100_000L)
             }.isInstanceOf(PlanException::class.java)
                 .extracting("errorCode")
-                .isEqualTo(PlanErrorCode.INVALID_MONTHLY_TOKEN_LIMIT)
+                .isEqualTo(PlanErrorCode.INVALID_MAX_SEATS)
         }
     }
 }

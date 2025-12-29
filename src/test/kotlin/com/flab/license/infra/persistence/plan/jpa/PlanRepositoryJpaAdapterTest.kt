@@ -49,7 +49,7 @@ class PlanRepositoryJpaAdapterTest {
         fun `save plan successfully`() {
             // Given
             val plan = Plan.create(
-                planCode = PlanCode.PRO,
+                planCode = PlanCode.ENTERPRISE,
                 maxSeats = 10,
                 monthlyTokenLimit = 500_000L
             )
@@ -59,7 +59,7 @@ class PlanRepositoryJpaAdapterTest {
 
             // Then
             assertThat(saved.id).isEqualTo(plan.id)
-            assertThat(saved.planCode).isEqualTo(PlanCode.PRO)
+            assertThat(saved.planCode).isEqualTo(PlanCode.ENTERPRISE)
             assertThat(saved.maxSeats).isEqualTo(10)
             assertThat(saved.monthlyTokenLimit).isEqualTo(500_000L)
             assertThat(saved.deleted).isFalse()
@@ -75,7 +75,7 @@ class PlanRepositoryJpaAdapterTest {
         fun `update plan successfully`() {
             // Given
             val plan = Plan.create(
-                planCode = PlanCode.PRO,
+                planCode = PlanCode.ENTERPRISE,
                 maxSeats = 10,
                 monthlyTokenLimit = 500_000L
             )
@@ -101,7 +101,7 @@ class PlanRepositoryJpaAdapterTest {
         fun `delete plan successfully`() {
             // Given
             val plan = Plan.create(
-                planCode = PlanCode.PRO,
+                planCode = PlanCode.ENTERPRISE,
                 maxSeats = 10,
                 monthlyTokenLimit = 500_000L
             )
@@ -126,7 +126,7 @@ class PlanRepositoryJpaAdapterTest {
         fun `load plan by id successfully`() {
             // Given
             val plan = Plan.create(
-                planCode = PlanCode.PRO,
+                planCode = PlanCode.ENTERPRISE,
                 maxSeats = 10,
                 monthlyTokenLimit = 500_000L
             )
@@ -158,7 +158,7 @@ class PlanRepositoryJpaAdapterTest {
         fun `throw exception when plan is deleted`() {
             // Given
             val plan = Plan.create(
-                planCode = PlanCode.PRO,
+                planCode = PlanCode.ENTERPRISE,
                 maxSeats = 10,
                 monthlyTokenLimit = 500_000L
             )
@@ -242,7 +242,7 @@ class PlanRepositoryJpaAdapterTest {
                 monthlyTokenLimit = 50_000L
             )
             val plan2 = Plan.create(
-                planCode = PlanCode.PRO,
+                planCode = PlanCode.ENTERPRISE,
                 maxSeats = 10,
                 monthlyTokenLimit = 500_000L
             )
@@ -254,7 +254,7 @@ class PlanRepositoryJpaAdapterTest {
 
             // Then
             assertThat(result).hasSize(2)
-            assertThat(result.map { it.planCode }).containsExactlyInAnyOrder(PlanCode.FREE, PlanCode.PRO)
+            assertThat(result.map { it.planCode }).containsExactlyInAnyOrder(PlanCode.FREE, PlanCode.ENTERPRISE)
         }
 
         @Test
@@ -267,7 +267,7 @@ class PlanRepositoryJpaAdapterTest {
                 monthlyTokenLimit = 50_000L
             )
             val plan2 = Plan.create(
-                planCode = PlanCode.PRO,
+                planCode = PlanCode.ENTERPRISE,
                 maxSeats = 10,
                 monthlyTokenLimit = 500_000L
             )

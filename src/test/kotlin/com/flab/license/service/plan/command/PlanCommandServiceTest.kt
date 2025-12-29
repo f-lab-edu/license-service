@@ -41,7 +41,7 @@ class PlanCommandServiceTest {
         fun `create plan successfully`() {
             // Given
             val command = CreatePlanCommand(
-                planCode = PlanCode.PRO,
+                planCode = PlanCode.ENTERPRISE,
                 maxSeats = 10,
                 monthlyTokenLimit = 500_000L
             )
@@ -51,7 +51,7 @@ class PlanCommandServiceTest {
             val result = planCommandService.create(command)
 
             // Then
-            assertThat(result.planCode).isEqualTo(PlanCode.PRO)
+            assertThat(result.planCode).isEqualTo(PlanCode.ENTERPRISE)
             assertThat(result.maxSeats).isEqualTo(10)
             assertThat(result.monthlyTokenLimit).isEqualTo(500_000L)
             verify(planRepository).save(any())
@@ -67,7 +67,7 @@ class PlanCommandServiceTest {
         fun `update plan successfully`() {
             // Given
             val existingPlan = Plan.create(
-                planCode = PlanCode.PRO,
+                planCode = PlanCode.ENTERPRISE,
                 maxSeats = 10,
                 monthlyTokenLimit = 500_000L
             )
@@ -116,7 +116,7 @@ class PlanCommandServiceTest {
         fun `delete plan successfully`() {
             // Given
             val existingPlan = Plan.create(
-                planCode = PlanCode.PRO,
+                planCode = PlanCode.ENTERPRISE,
                 maxSeats = 10,
                 monthlyTokenLimit = 500_000L
             )

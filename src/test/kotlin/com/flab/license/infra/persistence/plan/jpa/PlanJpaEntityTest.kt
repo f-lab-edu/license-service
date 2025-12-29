@@ -2,12 +2,11 @@ package com.flab.license.infra.persistence.plan.jpa
 
 import com.flab.license.domain.plan.Plan
 import com.flab.license.domain.plan.PlanCode
-import com.flab.license.domain.plan.PlanId
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import java.util.UUID
+import java.util.*
 
 class PlanJpaEntityTest {
 
@@ -20,7 +19,7 @@ class PlanJpaEntityTest {
         fun `convert domain to entity`() {
             // Given
             val plan = Plan.create(
-                planCode = PlanCode.PRO,
+                planCode = PlanCode.ENTERPRISE,
                 maxSeats = 10,
                 monthlyTokenLimit = 500_000L
             )
@@ -88,7 +87,7 @@ class PlanJpaEntityTest {
             // Given
             val entity = PlanJpaEntity(
                 id = UUID.randomUUID(),
-                planCode = PlanCode.PRO,
+                planCode = PlanCode.ENTERPRISE,
                 maxSeats = 10,
                 monthlyTokenLimit = 500_000L,
                 deleted = true
@@ -111,7 +110,7 @@ class PlanJpaEntityTest {
         fun `domain to entity to domain preserves data`() {
             // Given
             val original = Plan.create(
-                planCode = PlanCode.PRO,
+                planCode = PlanCode.ENTERPRISE,
                 maxSeats = 10,
                 monthlyTokenLimit = 500_000L
             )
