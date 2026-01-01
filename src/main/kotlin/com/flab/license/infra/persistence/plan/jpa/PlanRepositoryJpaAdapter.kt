@@ -16,7 +16,7 @@ class PlanRepositoryJpaAdapter(
 ) : PlanRepository {
 
     override fun save(plan: Plan): Plan {
-        val entity = PlanJpaEntity.fromDomain(plan)
+        val entity = plan.toEntity()
         val saved = springDataJpaRepository.save(entity)
         return saved.toDomain()
     }

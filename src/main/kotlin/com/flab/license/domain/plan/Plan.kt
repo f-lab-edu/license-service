@@ -59,14 +59,12 @@ class Plan private constructor(
             maxSeats: Int,
             monthlyTokenLimit: Long,
             deleted: Boolean
-        ): Plan {
-            return Plan(
-                id = id,
-                planCode = planCode,
-                maxSeats = maxSeats,
-                monthlyTokenLimit = monthlyTokenLimit,
-                deleted = deleted
-            )
-        }
+        ) = Plan(
+            id = id,
+            planCode = planCode,
+            maxSeats = maxSeats,
+            monthlyTokenLimit = monthlyTokenLimit,
+            deleted = deleted
+        )
     }
 }

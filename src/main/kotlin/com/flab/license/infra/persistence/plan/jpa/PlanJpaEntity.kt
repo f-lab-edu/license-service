@@ -1,8 +1,6 @@
 package com.flab.license.infra.persistence.plan.jpa
 
-import com.flab.license.domain.plan.Plan
 import com.flab.license.domain.plan.PlanCode
-import com.flab.license.domain.plan.PlanId
 import com.flab.license.infra.persistence.common.jpa.BaseTimeEntity
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
@@ -31,23 +29,4 @@ class PlanJpaEntity(
 
     @Column(nullable = false)
     val deleted: Boolean = false
-) : BaseTimeEntity() {
-
-    fun toDomain(): Plan = Plan.reconstitute(
-        id = PlanId(id),
-        planCode = planCode,
-        maxSeats = maxSeats,
-        monthlyTokenLimit = monthlyTokenLimit,
-        deleted = deleted
-    )
-
-    companion object {
-        fun fromDomain(plan: Plan): PlanJpaEntity = PlanJpaEntity(
-            id = plan.id.value,
-            planCode = plan.planCode,
-            maxSeats = plan.maxSeats,
-            monthlyTokenLimit = plan.monthlyTokenLimit,
-            deleted = plan.deleted
-        )
-    }
-}
+) : BaseTimeEntity()

@@ -8,11 +8,11 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import java.util.*
 
-class PlanJpaEntityTest {
+class PlanJpaMapperTest {
 
     @Nested
-    @DisplayName("fromDomain")
-    inner class FromDomain {
+    @DisplayName("toEntity")
+    inner class ToEntity {
 
         @Test
         @DisplayName("도메인 객체를 JPA 엔티티로 변환할 수 있다")
@@ -25,7 +25,7 @@ class PlanJpaEntityTest {
             )
 
             // When
-            val entity = PlanJpaEntity.fromDomain(plan)
+            val entity = plan.toEntity()
 
             // Then
             assertThat(entity.id).isEqualTo(plan.id.value)
@@ -46,7 +46,7 @@ class PlanJpaEntityTest {
             ).delete()
 
             // When
-            val entity = PlanJpaEntity.fromDomain(plan)
+            val entity = plan.toEntity()
 
             // Then
             assertThat(entity.deleted).isTrue()
@@ -116,7 +116,7 @@ class PlanJpaEntityTest {
             )
 
             // When
-            val entity = PlanJpaEntity.fromDomain(original)
+            val entity = original.toEntity()
             val restored = entity.toDomain()
 
             // Then
