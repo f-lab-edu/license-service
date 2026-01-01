@@ -1,5 +1,6 @@
 package com.flab.license.common.exception
 
+import com.fasterxml.jackson.databind.exc.MismatchedInputException
 import com.flab.license.common.response.ApiResponse
 import mu.KotlinLogging
 import org.springframework.http.ResponseEntity
@@ -29,10 +30,10 @@ class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(MethodArgumentNotValidException::class)
-    fun handleMethodArgumentNotValidException(
-        e: MethodArgumentNotValidException
-    ): ResponseEntity<ApiResponse<Unit>> {
-        log.warn { "Validation failed: ${e.message}" }
+    fun handleMethodArgumentNotValidException(e: MethodArgumentNotValidException): ResponseEntity<ApiResponse<Unit>> {
+        val errors = e.bindingResult.fieldErrors
+            .joinToString(", ") { "${it.field}='${it.rejectedValue}' (${it.defaultMessage})" }
+        log.warn { "Validation failed: $errors" }
 
         return ResponseEntity
             .status(CommonErrorCode.INVALID_INPUT.httpStatus)
@@ -40,14 +41,23 @@ class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(HttpMessageNotReadableException::class)
-    fun handleHttpMessageNotReadableException(
-        e: HttpMessageNotReadableException
-    ): ResponseEntity<ApiResponse<Unit>> {
-        log.warn { "Message not readable: ${e.message}" }
+    fun handleHttpMessageNotReadableException(e: HttpMessageNotReadableException): ResponseEntity<ApiResponse<Unit>> {
+        return when (val cause = e.cause) {
+            is MismatchedInputException -> {
+                val field = cause.path.joinToString(".") { it.fieldName ?: "unknown" }
+                log.warn { "Missing required field: $field" }
+                ResponseEntity
+                    .status(CommonErrorCode.INVALID_INPUT.httpStatus)
+                    .body(ApiResponse.error(CommonErrorCode.INVALID_INPUT))
+            }
 
-        return ResponseEntity
-            .status(CommonErrorCode.INVALID_JSON.httpStatus)
-            .body(ApiResponse.error(CommonErrorCode.INVALID_JSON))
+            else -> {
+                log.warn { "Message not readable: ${e.message}" }
+                ResponseEntity
+                    .status(CommonErrorCode.INVALID_JSON.httpStatus)
+                    .body(ApiResponse.error(CommonErrorCode.INVALID_JSON))
+            }
+        }
     }
 
     @ExceptionHandler(MissingServletRequestParameterException::class)
