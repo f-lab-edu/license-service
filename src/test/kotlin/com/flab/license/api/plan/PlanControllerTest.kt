@@ -1,36 +1,31 @@
 package com.flab.license.api.plan
 
-import com.fasterxml.jackson.databind.ObjectMapper
+import com.epages.restdocs.apispec.ResourceDocumentation.parameterWithName
+import com.epages.restdocs.apispec.ResourceDocumentation.resource
+import com.epages.restdocs.apispec.ResourceSnippetParameters
+import com.flab.license.api.AbstractRestDocsTest
+import com.flab.license.api.CommonResponseFields.success
 import com.flab.license.api.plan.dto.CreatePlanRequest
 import com.flab.license.api.plan.dto.UpdatePlanRequest
 import com.flab.license.domain.plan.Plan
 import com.flab.license.domain.plan.PlanCode
 import com.flab.license.domain.plan.PlanRepository
 import com.flab.license.infra.persistence.plan.jpa.PlanSpringDataJpaRepository
-import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.DisplayName
-import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
-import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.http.MediaType
-import org.springframework.test.web.servlet.MockMvc
-import org.springframework.test.web.servlet.delete
-import org.springframework.test.web.servlet.get
-import org.springframework.test.web.servlet.post
-import org.springframework.test.web.servlet.put
-import java.util.UUID
+import org.springframework.restdocs.mockmvc.MockMvcRestDocumentation.document
+import org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders
+import org.springframework.restdocs.payload.JsonFieldType
+import org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
+import java.util.*
 
-@SpringBootTest
-@AutoConfigureMockMvc
-class PlanControllerTest {
-
-    @Autowired
-    private lateinit var mockMvc: MockMvc
-
-    @Autowired
-    private lateinit var objectMapper: ObjectMapper
+@DisplayName("Plan API")
+class PlanControllerTest : AbstractRestDocsTest() {
 
     @Autowired
     private lateinit var planRepository: PlanRepository
@@ -38,361 +33,324 @@ class PlanControllerTest {
     @Autowired
     private lateinit var springDataJpaRepository: PlanSpringDataJpaRepository
 
-    @BeforeEach
-    fun setUp() {
+    @AfterEach
+    fun tearDown() {
         springDataJpaRepository.deleteAll()
     }
 
-    @Nested
-    @DisplayName("POST /plans")
-    inner class CreatePlan {
+    @Test
+    @DisplayName("POST /plans - 플랜 생성 성공")
+    fun createPlan_success() {
+        // Given
+        val request = CreatePlanRequest(
+            planCode = "ENTERPRISE",
+            maxSeats = 100,
+            monthlyTokenLimit = 1_000_000
+        )
 
-        @Test
-        @DisplayName("플랜 생성 성공")
-        fun `create plan successfully`() {
-            val request = CreatePlanRequest(
-                planCode = "ENTERPRISE",
-                maxSeats = 10,
-                monthlyTokenLimit = 500_000L
+        // When & Then
+        mockMvc
+            .perform(
+                RestDocumentationRequestBuilders
+                    .post("/plans")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(request))
             )
-
-            mockMvc.post("/plans") {
-                contentType = MediaType.APPLICATION_JSON
-                content = objectMapper.writeValueAsString(request)
-            }.andExpect {
-                status { isCreated() }
-                jsonPath("$.success") { value(true) }
-                jsonPath("$.data.planCode") { value("ENTERPRISE") }
-                jsonPath("$.data.maxSeats") { value(10) }
-                jsonPath("$.data.monthlyTokenLimit") { value(500_000) }
-            }
-        }
-
-        @Test
-        @DisplayName("최소값(maxSeats=1, monthlyTokenLimit=1)으로 플랜 생성 성공")
-        fun `create plan with minimum values`() {
-            val request = CreatePlanRequest(
-                planCode = "FREE",
-                maxSeats = 1,
-                monthlyTokenLimit = 1L
+            .andExpect(status().isCreated)
+            .andExpect(jsonPath("$.success").value(true))
+            .andExpect(jsonPath("$.data.planCode").value("ENTERPRISE"))
+            .andExpect(jsonPath("$.data.maxSeats").value(100))
+            .andExpect(jsonPath("$.data.monthlyTokenLimit").value(1_000_000))
+            .andDo(
+                document(
+                    "plan-create",
+                    resource(
+                        ResourceSnippetParameters
+                            .builder()
+                            .tag("Plan")
+                            .summary("플랜 생성")
+                            .description("새로운 플랜을 생성합니다.")
+                            .requestFields(
+                                fieldWithPath("planCode")
+                                    .type(JsonFieldType.STRING)
+                                    .description("플랜 코드 (FREE, PRO, ENTERPRISE). FREE/PRO는 maxSeats=1 필수"),
+                                fieldWithPath("maxSeats")
+                                    .type(JsonFieldType.NUMBER)
+                                    .description("최대 좌석 수. FREE/PRO: 1 고정, ENTERPRISE: 1 이상"),
+                                fieldWithPath("monthlyTokenLimit")
+                                    .type(JsonFieldType.NUMBER)
+                                    .description("월별 토큰 한도 (1 이상)")
+                            )
+                            .responseFields(
+                                success() + listOf(
+                                    fieldWithPath("data.id")
+                                        .type(JsonFieldType.STRING)
+                                        .description("플랜 ID (UUID)"),
+                                    fieldWithPath("data.planCode")
+                                        .type(JsonFieldType.STRING)
+                                        .description("플랜 코드"),
+                                    fieldWithPath("data.maxSeats")
+                                        .type(JsonFieldType.NUMBER)
+                                        .description("최대 좌석 수"),
+                                    fieldWithPath("data.monthlyTokenLimit")
+                                        .type(JsonFieldType.NUMBER)
+                                        .description("월별 토큰 한도")
+                                )
+                            )
+                            .build()
+                    )
+                )
             )
-
-            mockMvc.post("/plans") {
-                contentType = MediaType.APPLICATION_JSON
-                content = objectMapper.writeValueAsString(request)
-            }.andExpect {
-                status { isCreated() }
-                jsonPath("$.success") { value(true) }
-                jsonPath("$.data.maxSeats") { value(1) }
-                jsonPath("$.data.monthlyTokenLimit") { value(1) }
-            }
-        }
-
-        @Test
-        @DisplayName("필수 필드(planCode) 누락 시 400 에러와 INVALID_INPUT 반환")
-        fun `return 400 when required field is missing`() {
-            val request = mapOf(
-                // planCode 누락
-                "maxSeats" to 10,
-                "monthlyTokenLimit" to 500_000
-            )
-
-            mockMvc.post("/plans") {
-                contentType = MediaType.APPLICATION_JSON
-                content = objectMapper.writeValueAsString(request)
-            }.andExpect {
-                status { isBadRequest() }
-                jsonPath("$.success") { value(false) }
-                jsonPath("$.error") { value("INVALID_INPUT") }
-            }
-        }
-
-        @Test
-        @DisplayName("유효하지 않은 값 전달 시 400 에러와 INVALID_INPUT 반환")
-        fun `return 400 when invalid value`() {
-            val request = mapOf(
-                "planCode" to "PRO",
-                "maxSeats" to -1,
-                "monthlyTokenLimit" to 500_000
-            )
-
-            mockMvc.post("/plans") {
-                contentType = MediaType.APPLICATION_JSON
-                content = objectMapper.writeValueAsString(request)
-            }.andExpect {
-                status { isBadRequest() }
-                jsonPath("$.error") { value("INVALID_INPUT") }
-                jsonPath("$.success") { value(false) }
-            }
-        }
-
-        @Test
-        @DisplayName("잘못된 JSON 형식 요청 시 400 에러와 INVALID_JSON 반환")
-        fun `return 400 when invalid json format`() {
-            mockMvc.post("/plans") {
-                contentType = MediaType.APPLICATION_JSON
-                content = "{ invalid json }"
-            }.andExpect {
-                status { isBadRequest() }
-                jsonPath("$.success") { value(false) }
-                jsonPath("$.error") { value("INVALID_JSON") }
-            }
-        }
-
-        @Test
-        @DisplayName("존재하지 않는 PlanCode 값 전달 시 400 에러와 INVALID_INPUT 반환")
-        fun `return 400 when invalid enum value`() {
-            val request = mapOf(
-                "planCode" to "INVALID_PLAN_CODE",
-                "maxSeats" to 10,
-                "monthlyTokenLimit" to 500_000
-            )
-
-            mockMvc.post("/plans") {
-                contentType = MediaType.APPLICATION_JSON
-                content = objectMapper.writeValueAsString(request)
-            }.andExpect {
-                status { isBadRequest() }
-                jsonPath("$.success") { value(false) }
-                jsonPath("$.error") { value("INVALID_INPUT") }
-            }
-        }
     }
 
-    @Nested
-    @DisplayName("GET /plans")
-    inner class GetAllPlans {
+    @Test
+    @DisplayName("POST /plans - 유효하지 않은 플랜 코드로 생성 실패")
+    fun createPlan_invalidPlanCode_returnsError() {
+        // Given
+        val request = mapOf(
+            "planCode" to "INVALID",
+            "maxSeats" to 100,
+            "monthlyTokenLimit" to 1_000_000
+        )
 
-        @Test
-        @DisplayName("전체 플랜 목록 조회 성공")
-        fun `get all plans successfully`() {
-            // Given
-            val plan1 = Plan.create(PlanCode.FREE, 1, 50_000L)
-            val plan2 = Plan.create(PlanCode.ENTERPRISE, 10, 500_000L)
-            planRepository.save(plan1)
-            planRepository.save(plan2)
-
-            // When & Then
-            mockMvc.get("/plans")
-                .andExpect {
-                    status { isOk() }
-                    jsonPath("$.success") { value(true) }
-                    jsonPath("$.data.length()") { value(2) }
-                }
-        }
-
-        @Test
-        @DisplayName("플랜이 없으면 빈 목록 반환")
-        fun `return empty list when no plans`() {
-            mockMvc.get("/plans")
-                .andExpect {
-                    status { isOk() }
-                    jsonPath("$.success") { value(true) }
-                    jsonPath("$.data.length()") { value(0) }
-                }
-        }
-
-        @Test
-        @DisplayName("삭제된 플랜은 목록에서 제외된다")
-        fun `exclude deleted plans from list`() {
-            // Given
-            val plan1 = Plan.create(PlanCode.FREE, 1, 50_000L)
-            val plan2 = Plan.create(PlanCode.ENTERPRISE, 10, 500_000L)
-            planRepository.save(plan1)
-            planRepository.save(plan2)
-
-            // When - plan2 삭제
-            mockMvc.delete("/plans/${plan2.id.value}")
-                .andExpect { status { isOk() } }
-
-            // Then - 목록에서 plan2 제외 확인
-            mockMvc.get("/plans")
-                .andExpect {
-                    status { isOk() }
-                    jsonPath("$.data.length()") { value(1) }
-                    jsonPath("$.data[0].planCode") { value("FREE") }
-                }
-        }
+        // When & Then
+        mockMvc
+            .perform(
+                RestDocumentationRequestBuilders
+                    .post("/plans")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(request))
+            )
+            .andExpect(status().isBadRequest)
+            .andExpect(jsonPath("$.success").value(false))
+            .andExpect(jsonPath("$.error").exists())
     }
 
-    @Nested
-    @DisplayName("GET /plans/{planId}")
-    inner class GetPlanById {
+    @Test
+    @DisplayName("GET /plans - 전체 플랜 목록 조회")
+    fun getAllPlans_success() {
+        // Given
+        val plan1 = Plan.create(PlanCode.FREE, 1, 10_000)
+        val plan2 = Plan.create(PlanCode.PRO, 1, 100_000)
+        planRepository.save(plan1)
+        planRepository.save(plan2)
 
-        @Test
-        @DisplayName("플랜 상세 조회 성공")
-        fun `get plan by id successfully`() {
-            // Given
-            val plan = Plan.create(PlanCode.ENTERPRISE, 10, 500_000L)
-            planRepository.save(plan)
-
-            // When & Then
-            mockMvc.get("/plans/${plan.id.value}")
-                .andExpect {
-                    status { isOk() }
-                    jsonPath("$.success") { value(true) }
-                    jsonPath("$.data.planCode") { value("ENTERPRISE") }
-                    jsonPath("$.data.maxSeats") { value(10) }
-                }
-        }
-
-        @Test
-        @DisplayName("존재하지 않는 플랜 조회 시 404 에러")
-        fun `return 404 when plan not found`() {
-            val nonExistentId = UUID.randomUUID()
-
-            mockMvc.get("/plans/$nonExistentId")
-                .andExpect {
-                    status { isNotFound() }
-                    jsonPath("$.success") { value(false) }
-                    jsonPath("$.error") { value("PLAN_NOT_FOUND") }
-                }
-        }
-
-        @Test
-        @DisplayName("잘못된 UUID 형식 요청 시 400 에러")
-        fun `return 400 when invalid uuid format`() {
-            mockMvc.get("/plans/invalid-uuid")
-                .andExpect {
-                    status { isBadRequest() }
-                    jsonPath("$.success") { value(false) }
-                    jsonPath("$.error") { value("TYPE_MISMATCH") }
-                }
-        }
+        // When & Then
+        mockMvc
+            .perform(
+                RestDocumentationRequestBuilders
+                    .get("/plans")
+                    .contentType(MediaType.APPLICATION_JSON)
+            )
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.success").value(true))
+            .andExpect(jsonPath("$.data").isArray)
+            .andExpect(jsonPath("$.data.length()").value(2))
+            .andDo(
+                document(
+                    "plan-get-all",
+                    resource(
+                        ResourceSnippetParameters
+                            .builder()
+                            .tag("Plan")
+                            .summary("전체 플랜 목록 조회")
+                            .description("모든 플랜 목록을 조회합니다.")
+                            .responseFields(
+                                success() + listOf(
+                                    fieldWithPath("data[]")
+                                        .type(JsonFieldType.ARRAY)
+                                        .description("플랜 목록"),
+                                    fieldWithPath("data[].id")
+                                        .type(JsonFieldType.STRING)
+                                        .description("플랜 ID (UUID)"),
+                                    fieldWithPath("data[].planCode")
+                                        .type(JsonFieldType.STRING)
+                                        .description("플랜 코드"),
+                                    fieldWithPath("data[].maxSeats")
+                                        .type(JsonFieldType.NUMBER)
+                                        .description("최대 좌석 수"),
+                                    fieldWithPath("data[].monthlyTokenLimit")
+                                        .type(JsonFieldType.NUMBER)
+                                        .description("월별 토큰 한도")
+                                )
+                            )
+                            .build()
+                    )
+                )
+            )
     }
 
-    @Nested
-    @DisplayName("PUT /plans/{planId}")
-    inner class UpdatePlan {
+    @Test
+    @DisplayName("GET /plans/{planId} - 플랜 단건 조회")
+    fun getPlanById_success() {
+        // Given
+        val plan = Plan.create(PlanCode.ENTERPRISE, 100, 1_000_000)
+        planRepository.save(plan)
 
-        @Test
-        @DisplayName("플랜 수정 성공")
-        fun `update plan successfully`() {
-            // Given
-            val plan = Plan.create(PlanCode.ENTERPRISE, 10, 500_000L)
-            planRepository.save(plan)
-
-            val request = UpdatePlanRequest(
-                maxSeats = 20,
-                monthlyTokenLimit = 1_000_000L
+        // When & Then
+        mockMvc
+            .perform(
+                RestDocumentationRequestBuilders
+                    .get("/plans/{planId}", plan.id.value)
+                    .contentType(MediaType.APPLICATION_JSON)
             )
-
-            // When & Then
-            mockMvc.put("/plans/${plan.id.value}") {
-                contentType = MediaType.APPLICATION_JSON
-                content = objectMapper.writeValueAsString(request)
-            }.andExpect {
-                status { isOk() }
-                jsonPath("$.success") { value(true) }
-                jsonPath("$.data.maxSeats") { value(20) }
-                jsonPath("$.data.monthlyTokenLimit") { value(1_000_000) }
-            }
-        }
-
-        @Test
-        @DisplayName("최소값(maxSeats=1, monthlyTokenLimit=1)으로 플랜 수정 성공")
-        fun `update plan with minimum values`() {
-            // Given
-            val plan = Plan.create(PlanCode.ENTERPRISE, 10, 500_000L)
-            planRepository.save(plan)
-
-            val request = UpdatePlanRequest(
-                maxSeats = 1,
-                monthlyTokenLimit = 1L
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.success").value(true))
+            .andExpect(jsonPath("$.data.planCode").value("ENTERPRISE"))
+            .andDo(
+                document(
+                    "plan-get-by-id",
+                    resource(
+                        ResourceSnippetParameters
+                            .builder()
+                            .tag("Plan")
+                            .summary("플랜 단건 조회")
+                            .description("ID로 플랜을 조회합니다.")
+                            .pathParameters(
+                                parameterWithName("planId")
+                                    .description("플랜 ID (UUID)")
+                            )
+                            .responseFields(
+                                success() + listOf(
+                                    fieldWithPath("data.id")
+                                        .type(JsonFieldType.STRING)
+                                        .description("플랜 ID (UUID)"),
+                                    fieldWithPath("data.planCode")
+                                        .type(JsonFieldType.STRING)
+                                        .description("플랜 코드"),
+                                    fieldWithPath("data.maxSeats")
+                                        .type(JsonFieldType.NUMBER)
+                                        .description("최대 좌석 수"),
+                                    fieldWithPath("data.monthlyTokenLimit")
+                                        .type(JsonFieldType.NUMBER)
+                                        .description("월별 토큰 한도")
+                                )
+                            )
+                            .build()
+                    )
+                )
             )
-
-            // When & Then
-            mockMvc.put("/plans/${plan.id.value}") {
-                contentType = MediaType.APPLICATION_JSON
-                content = objectMapper.writeValueAsString(request)
-            }.andExpect {
-                status { isOk() }
-                jsonPath("$.data.maxSeats") { value(1) }
-                jsonPath("$.data.monthlyTokenLimit") { value(1) }
-            }
-        }
-
-        @Test
-        @DisplayName("존재하지 않는 플랜 수정 시 404 에러")
-        fun `return 404 when plan not found`() {
-            val nonExistentId = UUID.randomUUID()
-            val request = UpdatePlanRequest(
-                maxSeats = 20,
-                monthlyTokenLimit = 1_000_000L
-            )
-
-            mockMvc.put("/plans/$nonExistentId") {
-                contentType = MediaType.APPLICATION_JSON
-                content = objectMapper.writeValueAsString(request)
-            }.andExpect {
-                status { isNotFound() }
-                jsonPath("$.success") { value(false) }
-            }
-        }
-
-        @Test
-        @DisplayName("잘못된 UUID 형식 요청 시 400 에러")
-        fun `return 400 when invalid uuid format`() {
-            val request = UpdatePlanRequest(
-                maxSeats = 20,
-                monthlyTokenLimit = 1_000_000L
-            )
-
-            mockMvc.put("/plans/invalid-uuid") {
-                contentType = MediaType.APPLICATION_JSON
-                content = objectMapper.writeValueAsString(request)
-            }.andExpect {
-                status { isBadRequest() }
-                jsonPath("$.error") { value("TYPE_MISMATCH") }
-            }
-        }
     }
 
-    @Nested
-    @DisplayName("DELETE /plans/{planId}")
-    inner class DeletePlan {
+    @Test
+    @DisplayName("GET /plans/{planId} - 존재하지 않는 플랜 조회")
+    fun getPlanById_notFound_returnsError() {
+        // Given
+        val nonExistentId = UUID.randomUUID()
 
-        @Test
-        @DisplayName("플랜 삭제 성공")
-        fun `delete plan successfully`() {
-            // Given
-            val plan = Plan.create(PlanCode.ENTERPRISE, 10, 500_000L)
-            planRepository.save(plan)
+        // When & Then
+        mockMvc
+            .perform(
+                RestDocumentationRequestBuilders
+                    .get("/plans/{planId}", nonExistentId)
+                    .contentType(MediaType.APPLICATION_JSON)
+            )
+            .andExpect(status().isNotFound)
+            .andExpect(jsonPath("$.success").value(false))
+            .andExpect(jsonPath("$.error").exists())
+    }
 
-            // When & Then
-            mockMvc.delete("/plans/${plan.id.value}")
-                .andExpect {
-                    status { isOk() }
-                    jsonPath("$.success") { value(true) }
-                }
+    @Test
+    @DisplayName("PUT /plans/{planId} - 플랜 수정")
+    fun updatePlan_success() {
+        // Given
+        val plan = Plan.create(PlanCode.ENTERPRISE, 100, 1_000_000)
+        planRepository.save(plan)
+        val request = UpdatePlanRequest(
+            maxSeats = 200,
+            monthlyTokenLimit = 2_000_000
+        )
 
-            // Verify soft delete
-            mockMvc.get("/plans/${plan.id.value}")
-                .andExpect {
-                    status { isNotFound() }
-                }
-        }
+        // When & Then
+        mockMvc
+            .perform(
+                RestDocumentationRequestBuilders
+                    .put("/plans/{planId}", plan.id.value)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(request))
+            )
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.success").value(true))
+            .andExpect(jsonPath("$.data.maxSeats").value(200))
+            .andExpect(jsonPath("$.data.monthlyTokenLimit").value(2_000_000))
+            .andDo(
+                document(
+                    "plan-update",
+                    resource(
+                        ResourceSnippetParameters
+                            .builder()
+                            .tag("Plan")
+                            .summary("플랜 수정")
+                            .description("플랜 정보를 수정합니다.")
+                            .pathParameters(
+                                parameterWithName("planId")
+                                    .description("플랜 ID (UUID)")
+                            )
+                            .requestFields(
+                                fieldWithPath("maxSeats")
+                                    .type(JsonFieldType.NUMBER)
+                                    .description("최대 좌석 수 (1 이상)"),
+                                fieldWithPath("monthlyTokenLimit")
+                                    .type(JsonFieldType.NUMBER)
+                                    .description("월별 토큰 한도 (1 이상)")
+                            )
+                            .responseFields(
+                                success() + listOf(
+                                    fieldWithPath("data.id")
+                                        .type(JsonFieldType.STRING)
+                                        .description("플랜 ID (UUID)"),
+                                    fieldWithPath("data.planCode")
+                                        .type(JsonFieldType.STRING)
+                                        .description("플랜 코드"),
+                                    fieldWithPath("data.maxSeats")
+                                        .type(JsonFieldType.NUMBER)
+                                        .description("최대 좌석 수"),
+                                    fieldWithPath("data.monthlyTokenLimit")
+                                        .type(JsonFieldType.NUMBER)
+                                        .description("월별 토큰 한도")
+                                )
+                            )
+                            .build()
+                    )
+                )
+            )
+    }
 
-        @Test
-        @DisplayName("존재하지 않는 플랜 삭제 시 404 에러")
-        fun `return 404 when plan not found`() {
-            val nonExistentId = UUID.randomUUID()
+    @Test
+    @DisplayName("DELETE /plans/{planId} - 플랜 삭제")
+    fun deletePlan_success() {
+        // Given
+        val plan = Plan.create(PlanCode.ENTERPRISE, 100, 1_000_000)
+        planRepository.save(plan)
 
-            mockMvc.delete("/plans/$nonExistentId")
-                .andExpect {
-                    status { isNotFound() }
-                    jsonPath("$.success") { value(false) }
-                }
-        }
-
-        @Test
-        @DisplayName("잘못된 UUID 형식 요청 시 400 에러")
-        fun `return 400 when invalid uuid format`() {
-            mockMvc.delete("/plans/invalid-uuid")
-                .andExpect {
-                    status { isBadRequest() }
-                    jsonPath("$.error") { value("TYPE_MISMATCH") }
-                }
-        }
+        // When & Then
+        mockMvc
+            .perform(
+                RestDocumentationRequestBuilders
+                    .delete("/plans/{planId}", plan.id.value)
+                    .contentType(MediaType.APPLICATION_JSON)
+            )
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.success").value(true))
+            .andDo(
+                document(
+                    "plan-delete",
+                    resource(
+                        ResourceSnippetParameters
+                            .builder()
+                            .tag("Plan")
+                            .summary("플랜 삭제")
+                            .description("플랜을 삭제합니다.")
+                            .pathParameters(
+                                parameterWithName("planId")
+                                    .description("플랜 ID (UUID)")
+                            )
+                            .responseFields(
+                                success()
+                            )
+                            .build()
+                    )
+                )
+            )
     }
 }

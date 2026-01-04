@@ -2,8 +2,8 @@
 *.md
 !README.md
 
-# Local docs
-docs/
+# API Documentation
+src/main/resources/static/docs/openapi.yaml
 issues/
 .gradle
 build/
