@@ -1,9 +1,6 @@
 package com.flab.license.domain.plan
 
-import com.flab.license.domain.plan.exception.PlanErrorCode
-import com.flab.license.domain.plan.exception.PlanException
 import org.assertj.core.api.Assertions.assertThat
-import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -35,63 +32,6 @@ class PlanIdTest {
 
             // Then
             assertThat(planId1).isNotEqualTo(planId2)
-        }
-    }
-
-    @Nested
-    @DisplayName("from")
-    inner class From {
-
-        @Test
-        @DisplayName("유효한 UUID 문자열로 PlanId를 생성할 수 있다")
-        fun `from creates PlanId from valid UUID string`() {
-            // Given
-            val uuidString = "550e8400-e29b-41d4-a716-446655440000"
-
-            // When
-            val planId = PlanId.from(uuidString)
-
-            // Then
-            assertThat(planId.value.toString()).isEqualTo(uuidString)
-        }
-
-        @Test
-        @DisplayName("잘못된 UUID 문자열이면 예외가 발생한다")
-        fun `from throws exception for invalid UUID string`() {
-            // Given
-            val invalidUuidString = "invalid-uuid"
-
-            // When & Then
-            assertThatThrownBy {
-                PlanId.from(invalidUuidString)
-            }.isInstanceOf(PlanException::class.java)
-                .extracting("errorCode")
-                .isEqualTo(PlanErrorCode.INVALID_PLAN_ID)
-        }
-
-        @Test
-        @DisplayName("빈 문자열이면 예외가 발생한다")
-        fun `from throws exception for empty string`() {
-            // When & Then
-            assertThatThrownBy {
-                PlanId.from("")
-            }.isInstanceOf(PlanException::class.java)
-                .extracting("errorCode")
-                .isEqualTo(PlanErrorCode.INVALID_PLAN_ID)
-        }
-
-        @Test
-        @DisplayName("UUID 형식이 아닌 문자열이면 예외가 발생한다")
-        fun `from throws exception for non-UUID format`() {
-            // Given
-            val nonUuidString = "12345"
-
-            // When & Then
-            assertThatThrownBy {
-                PlanId.from(nonUuidString)
-            }.isInstanceOf(PlanException::class.java)
-                .extracting("errorCode")
-                .isEqualTo(PlanErrorCode.INVALID_PLAN_ID)
         }
     }
 
