@@ -4,6 +4,7 @@ plugins {
     id 'org.jetbrains.kotlin.jvm' version '2.1.0'
     id 'org.jetbrains.kotlin.plugin.spring' version '2.1.0'
     id 'org.jetbrains.kotlin.plugin.jpa' version '2.1.0'
+    id 'com.epages.restdocs-api-spec' version '0.19.4'
 }
 
 group = 'com.flab'
@@ -37,9 +38,39 @@ dependencies {
     runtimeOnly 'com.mysql:mysql-connector-j'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.mockito.kotlin:mockito-kotlin:5.4.0'
+    testImplementation 'org.springframework.restdocs:spring-restdocs-mockmvc'
+    testImplementation 'com.epages:restdocs-api-spec-mockmvc:0.19.4'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 
 tasks.named('test') {
     useJUnitPlatform()
+}
+
+openapi3 {
+    servers = [
+            { url = System.getenv('API_SERVER_URL') ?: 'http://localhost:8080' }
+    ]
+    title = 'License Service API'
+    description = '라이선스 관리 서비스 API'
+    version = project.version.toString()
+    format = 'yaml'
+    outputDirectory = layout.buildDirectory.dir('api-spec').get().asFile.path
+}
+
+afterEvaluate {
+    tasks.named('openapi3') {
+        dependsOn 'test'
+    }
+}
+
+tasks.register('copyOpenApiSpec', Copy) {
+    dependsOn 'openapi3'
+    from layout.buildDirectory.file('api-spec/openapi3.yaml')
+    into 'src/main/resources/static/docs'
+    rename { 'openapi.yaml' }
+}
+
+bootJar {
+    dependsOn 'copyOpenApiSpec'
 }
