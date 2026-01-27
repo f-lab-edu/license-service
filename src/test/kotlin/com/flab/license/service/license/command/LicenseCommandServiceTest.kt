@@ -3,7 +3,12 @@ package com.flab.license.service.license.command
 import com.flab.license.domain.license.*
 import com.flab.license.domain.license.exception.LicenseErrorCode
 import com.flab.license.domain.license.exception.LicenseException
+import com.flab.license.domain.plan.Plan
+import com.flab.license.domain.plan.PlanCode
 import com.flab.license.domain.plan.PlanId
+import com.flab.license.domain.plan.exception.PlanErrorCode
+import com.flab.license.domain.plan.exception.PlanException
+import com.flab.license.service.plan.query.PlanQueryService
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach
@@ -25,6 +30,9 @@ class LicenseCommandServiceTest {
     @Mock
     private lateinit var licenseRepository: LicenseRepository
 
+    @Mock
+    private lateinit var planQueryService: PlanQueryService
+
     private lateinit var licenseCommandService: LicenseCommandService
 
     private val defaultPlanId = PlanId(UUID.fromString("00000000-0000-0000-0000-000000000001"))
@@ -36,7 +44,7 @@ class LicenseCommandServiceTest {
 
     @BeforeEach
     fun setUp() {
-        licenseCommandService = LicenseCommandService(licenseRepository)
+        licenseCommandService = LicenseCommandService(licenseRepository, planQueryService)
     }
 
     @Nested
@@ -52,6 +60,12 @@ class LicenseCommandServiceTest {
                 owner = defaultOwner,
                 period = defaultPeriod
             )
+            val mockPlan = Plan.create(
+                planCode = PlanCode.FREE,
+                maxSeats = 1,
+                monthlyTokenLimit = 100000L
+            )
+            given(planQueryService.getById(defaultPlanId)).willReturn(mockPlan)
             given(licenseRepository.save(any())).willAnswer { it.arguments[0] }
 
             // When
@@ -63,6 +77,7 @@ class LicenseCommandServiceTest {
             assertThat(result.owner).isEqualTo(defaultOwner)
             assertThat(result.period).isEqualTo(defaultPeriod)
             assertThat(result.deleted).isFalse()
+            verify(planQueryService).getById(defaultPlanId)
             verify(licenseRepository).save(any())
         }
 
@@ -76,6 +91,12 @@ class LicenseCommandServiceTest {
                 owner = orgOwner,
                 period = defaultPeriod
             )
+            val mockPlan = Plan.create(
+                planCode = PlanCode.PRO,
+                maxSeats = 1,
+                monthlyTokenLimit = 500000L
+            )
+            given(planQueryService.getById(defaultPlanId)).willReturn(mockPlan)
             given(licenseRepository.save(any())).willAnswer { it.arguments[0] }
 
             // When
@@ -85,7 +106,27 @@ class LicenseCommandServiceTest {
             assertThat(result.owner.type).isEqualTo(Owner.Type.ORGANIZATION)
             assertThat(result.owner.id).isEqualTo("org-456")
             assertThat(result.status).isEqualTo(LicenseStatus.ACTIVE)
+            verify(planQueryService).getById(defaultPlanId)
             verify(licenseRepository).save(any())
+        }
+
+        @Test
+        @DisplayName("존재하지 않는 Plan으로 라이선스 생성 시 예외가 발생한다")
+        fun `throw exception when plan not found`() {
+            // Given
+            val command = CreateLicenseCommand(
+                planId = defaultPlanId,
+                owner = defaultOwner,
+                period = defaultPeriod
+            )
+            given(planQueryService.getById(defaultPlanId))
+                .willThrow(PlanException(PlanErrorCode.PLAN_NOT_FOUND))
+
+            // When & Then
+            assertThatThrownBy { licenseCommandService.create(command) }
+                .isInstanceOf(PlanException::class.java)
+                .extracting("errorCode")
+                .isEqualTo(PlanErrorCode.PLAN_NOT_FOUND)
         }
     }
 

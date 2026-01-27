@@ -4,6 +4,7 @@ import com.flab.license.domain.license.exception.LicenseErrorCode
 import com.flab.license.domain.license.exception.LicenseException
 import com.flab.license.domain.plan.PlanId
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatCode
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
@@ -383,6 +384,101 @@ class LicenseTest {
             assertThat(deletedLicense.planId).isEqualTo(originalPlanId)
             assertThat(deletedLicense.owner).isEqualTo(originalOwner)
             assertThat(deletedLicense.period).isEqualTo(originalPeriod)
+        }
+    }
+
+    @Nested
+    @DisplayName("validateUsable")
+    inner class ValidateUsable {
+
+        @Test
+        @DisplayName("ACTIVE 상태이고 기간 내이면 검증을 통과한다")
+        fun `pass validation when active and within period`() {
+            // Given
+            val license = License.create(
+                planId = defaultPlanId,
+                owner = defaultOwner,
+                period = defaultPeriod
+            )
+            val dateWithinPeriod = LocalDate.of(2025, 6, 15)
+
+            // When & Then
+            assertThatCode { license.validateUsable(dateWithinPeriod) }
+                .doesNotThrowAnyException()
+        }
+
+        @Test
+        @DisplayName("삭제된 라이선스는 검증에 실패한다")
+        fun `throw exception when license is deleted`() {
+            // Given
+            val license = License.create(
+                planId = defaultPlanId,
+                owner = defaultOwner,
+                period = defaultPeriod
+            )
+            val deletedLicense = license.delete()
+            val dateWithinPeriod = LocalDate.of(2025, 6, 15)
+
+            // When & Then
+            assertThatThrownBy { deletedLicense.validateUsable(dateWithinPeriod) }
+                .isInstanceOf(LicenseException::class.java)
+                .extracting("errorCode")
+                .isEqualTo(LicenseErrorCode.LICENSE_ALREADY_DELETED)
+        }
+
+        @Test
+        @DisplayName("EXPIRED 상태는 검증에 실패한다")
+        fun `throw exception when license status is expired`() {
+            // Given
+            val license = License.create(
+                planId = defaultPlanId,
+                owner = defaultOwner,
+                period = defaultPeriod
+            )
+            val expiredLicense = license.expire()
+            val dateWithinPeriod = LocalDate.of(2025, 6, 15)
+
+            // When & Then
+            assertThatThrownBy { expiredLicense.validateUsable(dateWithinPeriod) }
+                .isInstanceOf(LicenseException::class.java)
+                .extracting("errorCode")
+                .isEqualTo(LicenseErrorCode.LICENSE_NOT_ACTIVE)
+        }
+
+        @Test
+        @DisplayName("기간 시작 전이면 검증에 실패한다")
+        fun `throw exception when date is before period start`() {
+            // Given
+            val license = License.create(
+                planId = defaultPlanId,
+                owner = defaultOwner,
+                period = defaultPeriod
+            )
+            val dateBeforePeriod = LocalDate.of(2024, 12, 31)
+
+            // When & Then
+            assertThatThrownBy { license.validateUsable(dateBeforePeriod) }
+                .isInstanceOf(LicenseException::class.java)
+                .extracting("errorCode")
+                .isEqualTo(LicenseErrorCode.LICENSE_PERIOD_NOT_STARTED)
+        }
+
+        @Test
+        @DisplayName("기간 종료 후이면 검증에 실패한다")
+        fun `throw exception when date is after period end`() {
+            // Given
+            val license = License.create(
+                planId = defaultPlanId,
+                owner = defaultOwner,
+                period = defaultPeriod
+            )
+            val dateAfterPeriod = LocalDate.of(2026, 1, 1)
+
+            // When & Then
+            assertThatThrownBy { license.validateUsable(dateAfterPeriod) }
+                .isInstanceOf(LicenseException::class.java)
+                .extracting("errorCode")
+                .isEqualTo(LicenseErrorCode.LICENSE_PERIOD_ENDED)
         }
     }
 }
