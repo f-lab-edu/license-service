@@ -1,6 +1,7 @@
 package com.flab.license.domain.license
 
 import com.flab.license.domain.plan.PlanId
+import java.time.LocalDate
 
 class License private constructor(
     val id: LicenseId,
@@ -33,6 +34,10 @@ class License private constructor(
             period = this.period,
             deleted = true
         )
+    }
+
+    fun validateUsable(date: LocalDate = LocalDate.now()) {
+        LicensePolicy.validateUsable(status, deleted, period, date)
     }
 
     companion object {
